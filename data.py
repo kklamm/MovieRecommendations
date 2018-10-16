@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime
 import logging
+import pathlib
 
+import fire
 from joblib import Memory
 import numpy as np
 import pandas as pd
@@ -31,12 +33,12 @@ def user_item_matrix(df, user_index_mapping, movie_index_mapping):
     n_items = len(movie_index_mapping)
     users = df.userId.map(user_index_mapping)
     movies = df.movieId.map(movie_index_mapping)
-    values = np.ones_like(users)
-    return coo_matrix((values, (movies, values)), shape=(n_users, n_items))
+    values = df.rating
+    return coo_matrix((values, (users, movies)), shape=(n_users, n_items))
 
 
 class MovieRatings:
-    def __init__(self, ratings_df, ):
+    def __init__(self, ratings_df):
         self._df = ratings_df
         self._users = ratings_df.userId.sort_values().unique()
 
@@ -62,13 +64,13 @@ class MovieRatings:
         return self._index_user_mapping
 
 
-
-def main():
-    movie_handler = MovieHandler.from_file("ml-20m/movies.csv")
-    movie_ratings = MovieRatings.from_file("ml-20m/ratings.csv")
+def main(path):
+    path = pathlib.Path(path)
+    movie_handler = MovieHandler.from_file(path / "movies.csv")
+    movie_ratings = MovieRatings.from_file(path / "ratings.csv")
     ui_mat = user_item_matrix(movie_ratings.df, movie_ratings.user_index_mapping, movie_handler.id_index_mapping)
-    breakpoint()
+
 
 
 if __name__ == '__main__':
-    main()
+    fire.Fire(main)
