@@ -1,9 +1,13 @@
 from dataclasses import dataclass
+import logging
 from typing import List
 
 from joblib import Memory
 import pandas as pd
 
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 memory = Memory(location="~/joblib", verbose=True)
 
@@ -43,7 +47,7 @@ class MovieHandler:
     @property
     def id_index_mapping(self):
         if not hasattr(self, "_id_index_mapping"):
-            self._id_index_mapping = {movie_id: index for (index, movie_id) in self.index_id_mapping.keys()}
+            self._id_index_mapping = {movie_id: index for (index, movie_id) in self.index_id_mapping.items()}
         return self._id_index_mapping
 
 

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+import logging
 
 from joblib import Memory
 import numpy as np
@@ -9,7 +10,11 @@ from tqdm import tqdm
 
 from movies import MovieHandler
 
-memory = Memory(location="~/.joblib/")
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
+
+memory = Memory(location="~/.joblib/", verbose=True)
 
 
 @dataclass
@@ -21,15 +26,13 @@ class Rating:
 
 
 @memory.cache
-def _df_to_implicit_sparse(df, user_index_mapping, movie_index_mapping):
+def user_item_matrix(df, user_index_mapping, movie_index_mapping):
     n_users = len(user_index_mapping)
     n_items = len(movie_index_mapping)
-    mat = lil_matrix((n_users, n_items))
     users = df.userId.map(user_index_mapping)
     movies = df.movieId.map(movie_index_mapping)
     values = np.ones_like(users)
-
-    return coo_matrix((values, (movies, values)))
+    return coo_matrix((values, (movies, values)), shape=(n_users, n_items))
 
 
 class MovieRatings:
@@ -41,6 +44,10 @@ class MovieRatings:
     def from_file(cls, filename):
         ratings_df = pd.read_csv(filename)
         return cls(ratings_df)
+
+    @property
+    def df(self):
+        return self._df
 
     @property
     def user_index_mapping(self):
@@ -57,3 +64,11 @@ class MovieRatings:
 
 
 def main():
+    movie_handler = MovieHandler.from_file("ml-20m/movies.csv")
+    movie_ratings = MovieRatings.from_file("ml-20m/ratings.csv")
+    ui_mat = user_item_matrix(movie_ratings.df, movie_ratings.user_index_mapping, movie_handler.id_index_mapping)
+    breakpoint()
+
+
+if __name__ == '__main__':
+    main()
