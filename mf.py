@@ -2,6 +2,14 @@ import numpy as np
 import q
 
 
+def loss(R, X, Y, lambda_):
+    loss_ = 0
+    for u, i in zip(*R.nonzero()):
+        loss_ += (R[u, i] - X[u] @ Y[i])**2
+    loss_ += lambda_ * (np.sum(X**2) + np.sum(Y**2))
+    return loss_
+
+
 def optimize(R, X, Y, lambda_):
     P = (R > 0).astype(int)
     YtY = Y.T @ Y
