@@ -11,6 +11,7 @@ from scipy.sparse import coo_matrix
 from tqdm import tqdm
 
 from movies import MovieHandler
+from mf import alternate_least_squares
 
 
 logger = logging.getLogger(__name__)
@@ -69,6 +70,15 @@ def main(path):
     movie_handler = MovieHandler.from_file(path / "movies.csv")
     movie_ratings = MovieRatings.from_file(path / "ratings.csv")
     ui_mat = user_item_matrix(movie_ratings.df, movie_ratings.user_index_mapping, movie_handler.id_index_mapping)
+
+    n_latent = 20
+    R = ui_mat.tocsr()
+    X = np.random.rand(R.shape[0], n_latent)
+    Y = np.random.rand(R.shape[1], n_latent)
+
+    alternate_least_squares(R, X, Y, lambda_=0.1, show_loss=True)
+
+    breakpoint()
 
 
 
