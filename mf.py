@@ -10,7 +10,7 @@ def loss(R, X, Y, lambda_):
     return loss_
 
 
-def optimize(R, X, Y, lambda_):
+def als_step(R, X, Y, lambda_):
     P = (R > 0).astype(int)
     YtY = Y.T @ Y
 
