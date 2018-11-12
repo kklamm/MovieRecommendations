@@ -1,5 +1,7 @@
 import argparse
+import pathlib
 import urllib.request
+import zipfile
 
 
 URLS = {
@@ -15,9 +17,12 @@ def get_dataset():
                         help="Dataset size")
     args = parser.parse_args()
 
-    req = urllib.request.urlopen(URLS[args.size])
-    fname = req.url.split("/")[-1]
-    breakpoint()
+    url = URLS[args.size]
+    fname = url.split("/")[-1]
+    if not pathlib.Path(fname).exists():
+        urllib.request.urlretrieve(url, fname)
+    with zipfile.ZipFile(fname) as zf:
+        zf.extractall()
 
 
 get_dataset()
