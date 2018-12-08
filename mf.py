@@ -11,14 +11,13 @@ def loss(R, X, Y, lambda_):
     return loss_
 
 
-def als_step(R, X, Y, lambda_, alpha=40):
+def als_step(R, X, Y, lambda_):
     P = (R > 0).astype(int)
     YtY = Y.T @ Y
     for u in range(P.shape[0]):
         Pu = P[u].toarray()[0]
         Ru = R[u].toarray()[0]
-        Cu = 1 + alpha * Ru
-        Cu = np.diag(Cu)
+        Cu = np.diag(Ru)
         I = np.diag(np.ones(X.shape[1]))
         YtCuY = YtY + Y.T @ (Cu - np.diag(np.ones(Cu.shape[0]))) @ Y
         X[u] = np.linalg.inv(YtCuY + lambda_ * I) @ Y.T @ Cu @ Pu
@@ -34,3 +33,4 @@ def alternate_least_squares(R, X, Y, lambda_, *, n_optimize=15, show_loss=False)
             if show_loss:
                 l = loss(R, X, Y, lambda_)
                 pbar.set_postfix({"loss": l})
+            
