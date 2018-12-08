@@ -20,9 +20,8 @@ def als_step(R, X, Y, lambda_, alpha=40):
         Cu = 1 + alpha * Ru
         Cu = np.diag(Cu)
         I = np.diag(np.ones(X.shape[1]))
-        Cu_minus_I = Cu - 1
-        YtCu_minus_IY = Y.T @ Cu_minus_I @ Y
-        X[u] = np.linalg.inv(YtY + YtCu_minus_IY + lambda_ * I) @ Y.T @ Cu @ Pu
+        YtCuY = YtY + Y.T @ (Cu - np.diag(np.ones(Cu.shape[0]))) @ Y
+        X[u] = np.linalg.inv(YtCuY + lambda_ * I) @ Y.T @ Cu @ Pu
 
     XtX = X.T @ X
     for i in trange(P.shape[1]):
@@ -30,10 +29,9 @@ def als_step(R, X, Y, lambda_, alpha=40):
         Ri = R[:, i].toarray()[:, 0]
         Ci = 1 + 40 * Ri
         Ci = np.diag(Ci)
-        I = np.diag(np.ones(X.shape[1]))
-        Ci_minus_I = Ci - 1
-        XtCu_minus_IX = X.T @ Ci_minus_I @ X
-        Y[i] = np.linalg.inv(XtX + XtCu_minus_IX + lambda_ * I) @ X.T @ Ci @ Pi
+        I = np.diag(np.ones(Y.shape[1]))
+        XtCiX = XtX + X.T @ (Ci - np.diag(np.ones(Ci.shape[0]))) @ X
+        Y[i] = np.linalg.inv(XtCiX + lambda_ * I) @ X.T @ Ci @ Pi
 
 
 def alternate_least_squares(R, X, Y, lambda_, *, n_optimize=15, show_loss=False):
