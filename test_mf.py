@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
+from hypothesis import given
+from hypothesis.extra import numpy as hnp
 
 from mf import als_step, alternate_least_squares, loss
 
@@ -29,5 +31,3 @@ def test_alternate_least_squares(R):
     Y = np.random.rand(R.shape[1], latent)
 
     alternate_least_squares(R, X, Y, 0.1, show_loss=True)
-
-

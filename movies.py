@@ -20,7 +20,6 @@ class Movie:
     genres: List[str]
 
 
-@memory.cache
 def df_to_movies(df):
     df = df.set_index("movieId").sort_index()
     movies = []
@@ -35,7 +34,7 @@ class MovieHandler:
 
     @classmethod
     def from_file(cls, filename):
-        df = pd.read_csv(filename)
+        df = pd.read_csv(filename, sep="::", names=["movieId", "title", "genre"])
         return cls(df)
 
     @property
@@ -52,9 +51,9 @@ class MovieHandler:
 
 
 def main():
-    mh = MovieHandler.from_file("ml-20m/movies.csv")
-    breakpoint()
+    mh = MovieHandler.from_file("ml-10M100K/movies.dat")
 
 
 if __name__ == '__main__':
     main()
+    memory.clear()

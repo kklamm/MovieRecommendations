@@ -33,4 +33,3 @@ def alternate_least_squares(R, X, Y, lambda_, *, n_optimize=15, show_loss=False)
             if show_loss:
                 l = loss(R, X, Y, lambda_)
                 pbar.set_postfix({"loss": l})
-            

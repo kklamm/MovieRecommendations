@@ -28,24 +28,24 @@ class Rating:
     timestamp: datetime
 
 
-@memory.cache
 def user_item_matrix(df, user_index_mapping, movie_index_mapping):
     n_users = len(user_index_mapping)
     n_items = len(movie_index_mapping)
-    users = df.userId.map(user_index_mapping)
-    movies = df.movieId.map(movie_index_mapping)
-    values = df.rating
+    users = df["UserID"].map(user_index_mapping)
+    movies = df["MovieID"].map(movie_index_mapping)
+    values = df["Rating"]
     return coo_matrix((values, (users, movies)), shape=(n_users, n_items))
 
 
 class MovieRatings:
     def __init__(self, ratings_df):
         self._df = ratings_df
-        self._users = ratings_df.userId.sort_values().unique()
+        self._users = ratings_df["UserID"].sort_values().unique()
 
     @classmethod
     def from_file(cls, filename):
-        ratings_df = pd.read_csv(filename)
+        ratings_df = pd.read_csv(filename, sep="::", names=["UserID", "MovieID",
+                                                            "Rating", "Timestamp"])
         return cls(ratings_df)
 
     @property
@@ -67,8 +67,8 @@ class MovieRatings:
 
 def main(path):
     path = pathlib.Path(path)
-    movie_handler = MovieHandler.from_file(path / "movies.csv")
-    movie_ratings = MovieRatings.from_file(path / "ratings.csv")
+    movie_handler = MovieHandler.from_file(path / "movies.dat")
+    movie_ratings = MovieRatings.from_file(path / "ratings.dat")
     ui_mat = user_item_matrix(movie_ratings.df, movie_ratings.user_index_mapping, movie_handler.id_index_mapping)
 
     n_latent = 20
@@ -78,8 +78,7 @@ def main(path):
 
     alternate_least_squares(R, X, Y, lambda_=0.1, show_loss=True)
 
-    breakpoint()
-
+    memory.clear()
 
 
 if __name__ == '__main__':
