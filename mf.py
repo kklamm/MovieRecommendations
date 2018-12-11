@@ -16,11 +16,24 @@ def als_step(R, X, Y, lambda_):
     YtY = Y.T @ Y
     for u in range(P.shape[0]):
         Pu = P[u].toarray()[0]
-        Ru = R[u].toarray()[0]
+        Ru = np.maximum(R[u].toarray()[0], 1)
         Cu = np.diag(Ru)
         I = np.diag(np.ones(X.shape[1]))
         YtCuY = YtY + Y.T @ (Cu - np.diag(np.ones(Cu.shape[0]))) @ Y
         X[u] = np.linalg.inv(YtCuY + lambda_ * I) @ Y.T @ Cu @ Pu
+
+
+def als_step_sparse(indptr, indices, data, X, Y, lambda_):
+    n_users = X.shape[0]
+
+    YtY = Y.T @ Y
+
+    for u in range(n_users):
+        if indptr[u] == indptr[u+1]:
+            continue
+        for idx in range(indptr[u], indptr[u+1]):
+            i = indices[idx]
+            Cui = np.maximum(data[idx], 1)
 
 
 def alternate_least_squares(R, X, Y, lambda_, *, n_optimize=15, show_loss=False):
