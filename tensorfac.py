@@ -8,7 +8,7 @@ def loss(T, M0, M1, M2, lambda_):
     total = 0
     for i, j, k in zip(*T.nonzero()):
         total += T[i, j, k] * (1 - np.sum(M0[:, i] * M1[:, j] * M2[:, k]))**2
-    total += lambda_ * np.sum(M0**2 + M1**2 + M2**2)
+    total += lambda_ * (np.sum(M0**2) + np.sum(M1**2) + np.sum(M2**2))
     return total
 
 
@@ -27,7 +27,7 @@ def alternate_least_squares(T, M0, M1, M2, lambda_):
         for j, k in zip(*T[i].nonzero()):
             w = T[i, j, k]
             if w == 0:
-                w += 1
+                w = 1
             v = M1[:, j] * M2[:, k]
             Cji += w * v * v[:, None]
             Oj += w * v
@@ -40,7 +40,8 @@ def implicit_tensor_factorization(tensor,
                                   n_context: int,
                                   n_latent: int,
                                   lambda_: float,
-                                  n_epochs: int = 15):
+                                  n_epochs: int = 15,
+                                  show_loss: bool = False):
     """
     Implementation of ALS-based tensor factorization for three dimensions (user-item
     matrix with one additional context dimension)
@@ -55,16 +56,24 @@ def implicit_tensor_factorization(tensor,
     tensor2 = tensor.transpose((2, 0, 1))
 
 
-    for _ in trange(n_epochs):
-        alternate_least_squares(tensor0, M0, M1, M2, lambda_)
-        alternate_least_squares(tensor1, M1, M0, M1, lambda_)
-        alternate_least_squares(tensor2, M2, M0, M1, lambda_)
+    with tqdm(total=n_epochs) as pbar:
+        for _ in range(n_epochs):
+            alternate_least_squares(tensor0, M0, M1, M2, lambda_)
+            pbar.update(0.333)
+            alternate_least_squares(tensor1, M1, M0, M2, lambda_)
+            pbar.update(0.333)
+            alternate_least_squares(tensor2, M2, M0, M1, lambda_)
+            pbar.update(0.333)
+
+            if show_loss:
+                pbar.set_postfix(loss=loss(tensor, M0, M1, M2, lambda_))
 
 
-def test_tensor_fac(n_users=100, n_items=20, n_context=3, n_latent=10, n_epochs=15, lambda_=0.1):
+
+def test_tensor_fac(n_users=1000, n_items=200, n_context=3, n_latent=10, n_epochs=15, lambda_=0.1):
     tensor = sparse.random((n_users, n_items, n_context), density=0.01)
 
-    implicit_tensor_factorization(tensor, n_users, n_items, n_context, n_latent, lambda_)
+    implicit_tensor_factorization(tensor, n_users, n_items, n_context, n_latent, lambda_, show_loss=True)
 
 
 fire.Fire()
