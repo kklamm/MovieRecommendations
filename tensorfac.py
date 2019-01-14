@@ -71,8 +71,7 @@ def implicit_tensor_factorization(tensor,
 
 
 def test_tensor_fac(n_users=1000, n_items=200, n_context=3, n_latent=10, n_epochs=15, lambda_=0.1):
-    tensor = sparse.random((n_users, n_items, n_context), density=0.01)
-
+    tensor = (sparse.random((n_users, n_items, n_context), density=0.01) * 30).astype(int)
     implicit_tensor_factorization(tensor, n_users, n_items, n_context, n_latent, lambda_, show_loss=True)
 
 
