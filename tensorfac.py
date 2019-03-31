@@ -34,6 +34,30 @@ def alternate_least_squares(T, M0, M1, M2, lambda_):
         M0[:, i] = np.linalg.inv(Cji + lambda_ * I) @ Oj[0]
 
 
+def alternate_least_squares_optimized(indptr, y_indices, z_indices, data, M0, M1, M2, lambda_):
+    MM0 = M0 @ M0.T
+    MM1 = M1 @ M1.T
+    MM2 = M2 @ M2.T
+
+    K = M0.shape[0]
+    I = np.eye(K)
+    Ci = MM1 * MM2
+
+    n0 = M0.shape[0]
+
+    for i in range(n0):
+        Cji = Ci.copy()
+        Oj = np.zeros((1, K))
+        for idx in range(indptr[i], indptr[i+1]):
+            j = y_indices[idx]
+            k = z_indices[idx]
+            confidence = data[idx]
+            v = M1[:, j] * M2[:, k]
+            Cji += confidence * v * v[:, None]
+            Oj += confidence * v
+        M0[:, i] = np.linalg.inv(Cji + lambda_ * I) @ Oj[0]
+
+
 def implicit_tensor_factorization(tensor,
                                   n_users: int,
                                   n_items: int,
@@ -55,7 +79,6 @@ def implicit_tensor_factorization(tensor,
     tensor1 = tensor.transpose((1, 0, 2))
     tensor2 = tensor.transpose((2, 0, 1))
 
-
     with tqdm(total=n_epochs) as pbar:
         for _ in range(n_epochs):
             alternate_least_squares(tensor0, M0, M1, M2, lambda_)
@@ -66,8 +89,8 @@ def implicit_tensor_factorization(tensor,
             pbar.update(0.333)
 
             if show_loss:
-                pbar.set_postfix(loss=loss(tensor, M0, M1, M2, lambda_))
-
+                loss_ = loss(tensor, M0, M1, M2, lambda_)
+                pbar.set_postfix(loss=loss_)
 
 
 def test_tensor_fac(n_users=1000, n_items=200, n_context=3, n_latent=10, n_epochs=15, lambda_=0.1):
