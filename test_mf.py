@@ -29,5 +29,8 @@ def test_alternate_least_squares(R):
     latent = 20
     X = np.random.rand(R.shape[0], latent)
     Y = np.random.rand(R.shape[1], latent)
-
+    l_before = loss(R, X, Y, 0.1)
     alternate_least_squares(R, X, Y, 0.1, show_loss=True)
+    l_after = loss(R, X, Y, 0.1)
+    assert l_before > l_after
+
