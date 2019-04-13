@@ -4,6 +4,20 @@ import sparse
 from tqdm import tqdm, trange
 
 
+def to_indptr(row_indices, n_rows):
+    indptr = np.zeros(n_rows + 1, dtype=int)
+    rows, counts = np.unique(row_indices, return_counts=True)
+
+    cumul = 0
+    for row_idx in range(n_rows):
+        loc, = np.where(row_idx == rows)
+        indptr[row_idx] = cumul
+        if loc.size > 0:
+            cumul += counts[loc]
+    indptr[-1] = cumul
+    return indptr
+
+
 def loss(T, M0, M1, M2, lambda_):
     total = 0
     for i, j, k in zip(*T.nonzero()):
