@@ -57,7 +57,7 @@ def alternate_least_squares_optimized(indptr, y_indices, z_indices, data, M0, M1
     I = np.eye(K)
     Ci = MM1 * MM2
 
-    n0 = M0.shape[0]
+    n0 = M0.shape[1]
 
     for i in range(n0):
         Cji = Ci.copy()
@@ -131,9 +131,9 @@ def implicit_tensor_factorization_optimized(tensor,
     tensor1 = tensor.transpose((1, 0, 2))
     tensor2 = tensor.transpose((2, 0, 1))
 
-    indptr0 = to_indptr(tensor.coords[0], tensor.shape[0])
-    indptr1 = to_indptr(tensor.coords[1], tensor.shape[1])
-    indptr2 = to_indptr(tensor.coords[2], tensor.shape[2])
+    indptr0 = to_indptr(tensor.coords[0], tensor.nnz)
+    indptr1 = to_indptr(tensor.coords[1], tensor.nnz)
+    indptr2 = to_indptr(tensor.coords[2], tensor.nnz)
 
     with tqdm(total=n_epochs) as pbar:
         for n in range(n_epochs):
