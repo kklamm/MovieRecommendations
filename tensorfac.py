@@ -110,11 +110,54 @@ def implicit_tensor_factorization(tensor,
             pbar.refresh()
 
 
+def implicit_tensor_factorization_optimized(tensor,
+                                            n_users: int,
+                                            n_items: int,
+                                            n_context: int,
+                                            n_latent: int,
+                                            lambda_: float,
+                                            n_epochs: int = 15,
+                                            show_loss: bool = False):
+    """
+    Implementation of ALS-based tensor factorization for three dimensions (user-item
+    matrix with one additional context dimension)
+    """
+
+    M0 = np.random.rand(n_latent, n_users)
+    M1 = np.random.rand(n_latent, n_items)
+    M2 = np.random.rand(n_latent, n_context)
+
+    tensor0 = tensor
+    tensor1 = tensor.transpose((1, 0, 2))
+    tensor2 = tensor.transpose((2, 0, 1))
+
+    indptr0 = to_indptr(tensor.coords[0], tensor.shape[0])
+    indptr1 = to_indptr(tensor.coords[1], tensor.shape[1])
+    indptr2 = to_indptr(tensor.coords[2], tensor.shape[2])
+
+    with tqdm(total=n_epochs) as pbar:
+        for n in range(n_epochs):
+            alternate_least_squares_optimized(indptr0, tensor0.coords[1], tensor0.coords[2], tensor0.data,
+                                              M0, M1, M2, lambda_)
+            pbar.n = n + 1/3
+            pbar.refresh()
+            alternate_least_squares_optimized(indptr1, tensor1.coords[1], tensor1.coords[2], tensor1.data,
+                                              M1, M0, M2, lambda_)
+            pbar.n = n + 2/3
+            pbar.refresh()
+            alternate_least_squares_optimized(indptr2, tensor2.coords[1], tensor2.coords[2], tensor2.data,
+                                              M2, M0, M1, lambda_)
+            pbar.n = n + 1
+
+            if show_loss:
+                loss_ = loss(tensor, M0, M1, M2, lambda_)
+                pbar.set_postfix(loss=loss_)
+            pbar.refresh()
 
 
 def test_tensor_fac(n_users=1000, n_items=200, n_context=3, n_latent=10, n_epochs=15, lambda_=0.1):
     tensor = (sparse.random((n_users, n_items, n_context), density=0.01) * 30).astype(int)
-    implicit_tensor_factorization(tensor, n_users, n_items, n_context, n_latent, lambda_, show_loss=True)
+    implicit_tensor_factorization_optimized(tensor, n_users, n_items, n_context, n_latent, lambda_, show_loss=True)
 
 
 fire.Fire()
