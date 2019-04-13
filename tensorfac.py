@@ -94,17 +94,22 @@ def implicit_tensor_factorization(tensor,
     tensor2 = tensor.transpose((2, 0, 1))
 
     with tqdm(total=n_epochs) as pbar:
-        for _ in range(n_epochs):
+        for n in range(n_epochs):
             alternate_least_squares(tensor0, M0, M1, M2, lambda_)
-            pbar.update(0.333)
+            pbar.n = n + 1/3
+            pbar.refresh()
             alternate_least_squares(tensor1, M1, M0, M2, lambda_)
-            pbar.update(0.333)
+            pbar.n = n + 2/3
+            pbar.refresh()
             alternate_least_squares(tensor2, M2, M0, M1, lambda_)
-            pbar.update(0.333)
+            pbar.n = n + 1
 
             if show_loss:
                 loss_ = loss(tensor, M0, M1, M2, lambda_)
                 pbar.set_postfix(loss=loss_)
+            pbar.refresh()
+
+
 
 
 def test_tensor_fac(n_users=1000, n_items=200, n_context=3, n_latent=10, n_epochs=15, lambda_=0.1):
