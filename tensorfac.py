@@ -1,19 +1,25 @@
 import fire
+import numba
 import numpy as np
 import sparse
 from tqdm import tqdm, trange
 
 
+@numba.njit
 def to_indptr(row_indices, n_rows):
-    indptr = np.zeros(n_rows + 1, dtype=int)
-    rows, counts = np.unique(row_indices, return_counts=True)
+    indptr = np.zeros(n_rows + 1, dtype=np.int32)
+    rows = np.unique(row_indices)
+    counts = np.zeros(n_rows, dtype=np.int32)
+    for row in row_indices:
+        counts[row] += 1
+    counts = counts[counts > 0]
 
     cumul = 0
     for row_idx in range(n_rows):
         loc, = np.where(row_idx == rows)
         indptr[row_idx] = cumul
         if loc.size > 0:
-            cumul += counts[loc]
+            cumul += counts[loc[0]]
     indptr[-1] = cumul
     return indptr
 
@@ -26,6 +32,27 @@ def loss(T, M0, M1, M2, lambda_):
     return total
 
 
+@numba.njit
+def loss_optimized(indptr, coord1, coord2, data, M0, M1, M2, lambda_):
+    total = 0
+    for i in range(indptr.size - 1):
+        for idx in range(indptr[i], indptr[i+1]):
+            j = coord1[idx]
+            k = coord2[idx]
+            val = data[idx]
+            if val > 0:
+                confidence = val
+                val = 1
+            else:
+                val = 0
+                confidence = 1
+
+            total += confidence  * (val - np.sum(M0[:, i] * M1[:, j] * M2[:, k]))**2
+    total += lambda_ * (np.sum(M0**2) + np.sum(M1**2) + np.sum(M2**2))
+    return total
+
+
+@numba.njit
 def conjugate_gradient(A, b, x, n_iter=3):
     r = b - A @ x
     p = r
@@ -65,6 +92,7 @@ def alternate_least_squares(T, M0, M1, M2, lambda_):
         M0[:, i] = np.linalg.inv(Cji + lambda_ * I) @ Oj[0]
 
 
+@numba.njit(parallel=False)
 def alternate_least_squares_optimized(indptr, y_indices, z_indices, data, M0, M1, M2, lambda_):
     MM0 = M0 @ M0.T
     MM1 = M1 @ M1.T
@@ -76,7 +104,7 @@ def alternate_least_squares_optimized(indptr, y_indices, z_indices, data, M0, M1
 
     n0 = M0.shape[1]
 
-    for i in range(n0):
+    for i in numba.prange(n0):
         Cji = Ci.copy()
         Oj = np.zeros((1, K))
 
@@ -87,12 +115,12 @@ def alternate_least_squares_optimized(indptr, y_indices, z_indices, data, M0, M1
         for idx in range(indptr[i], indptr[i+1]):
             j = y_indices[idx]
             k = z_indices[idx]
+            v = np.empty((1, K))
             confidence = data[idx]
-            v = M1[:, j] * M2[:, k]
-            Cji += confidence * v * v[:, None]
+            v[0] = M1[:, j] * M2[:, k]
+            Cji += confidence * v * v.T
             Oj += confidence * v
 
-        M0[:, i] = np.linalg.inv(Cji + lambda_ * I) @ Oj[0]
         conjugate_gradient(Cji + lambda_ * I, Oj[0], M0[:, i])
 
 
@@ -174,13 +202,14 @@ def implicit_tensor_factorization_optimized(tensor,
             pbar.n = n + 1
 
             if show_loss:
-                loss_ = loss(tensor, M0, M1, M2, lambda_)
+                loss_ = loss_optimized(indptr0, tensor.coords[1], tensor.coords[2], tensor.data,
+                                       M0, M1, M2, lambda_)
                 pbar.set_postfix(loss=loss_)
             pbar.refresh()
 
 
-def test_tensor_fac(n_users=1000, n_items=200, n_context=3, n_latent=10, n_epochs=15, lambda_=0.1):
-    tensor = (sparse.random((n_users, n_items, n_context), density=0.01) * 30).astype(int)
+def test_tensor_fac(n_users=100_000, n_items=2000, n_context=3, n_latent=10, n_epochs=15, lambda_=0.1):
+    tensor = (sparse.random((n_users, n_items, n_context), density=0.001) * 30).astype(int)
     implicit_tensor_factorization_optimized(tensor, n_users, n_items, n_context, n_latent, lambda_, show_loss=True)
 
 
