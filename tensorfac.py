@@ -26,6 +26,23 @@ def loss(T, M0, M1, M2, lambda_):
     return total
 
 
+def conjugate_gradient(A, b, x, n_iter=3):
+    r = b - A @ x
+    p = r
+    rsold = r @ r
+
+    for _ in range(n_iter):
+        Ap = A @ p
+        alpha = rsold / (p @ Ap)
+        x += alpha * p
+        r -= alpha * Ap
+        rsnew = r @ r
+        if rsnew < 1e-20:
+            break
+        p = r + rsnew / rsold * p
+        rsold = rsnew
+
+
 def alternate_least_squares(T, M0, M1, M2, lambda_):
     MM0 = M0 @ M0.T
     MM1 = M1 @ M1.T
