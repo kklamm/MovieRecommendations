@@ -79,6 +79,11 @@ def alternate_least_squares_optimized(indptr, y_indices, z_indices, data, M0, M1
     for i in range(n0):
         Cji = Ci.copy()
         Oj = np.zeros((1, K))
+
+        if indptr[i] == indptr[i+1]:
+            M0[:, i] = 0
+            continue
+
         for idx in range(indptr[i], indptr[i+1]):
             j = y_indices[idx]
             k = z_indices[idx]
@@ -86,7 +91,9 @@ def alternate_least_squares_optimized(indptr, y_indices, z_indices, data, M0, M1
             v = M1[:, j] * M2[:, k]
             Cji += confidence * v * v[:, None]
             Oj += confidence * v
+
         M0[:, i] = np.linalg.inv(Cji + lambda_ * I) @ Oj[0]
+        conjugate_gradient(Cji + lambda_ * I, Oj[0], M0[:, i])
 
 
 def implicit_tensor_factorization(tensor,
